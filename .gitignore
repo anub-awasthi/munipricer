@@ -5,7 +5,6 @@ data/raw/
 models/*.txt
 models/*.csv
 models/meta.json
-reports/*.png
 
 # python
 __pycache__/

@@ -130,8 +130,9 @@ def build_features(df: pd.DataFrame, bench_window: str = BENCH_WINDOW) -> pd.Dat
     for c in ["callable", "bank_qualified", "insured"]:
         df[c] = df[c].astype(int)
 
-    # market benchmark (level) and the target
-    df["bench"] = market_benchmark(df, bench_window)
+    # market benchmark (level) and the target. bench_window=None switches the benchmark off (bench = 0), which
+    # reproduces the v1 absolute-yield model for ablations.
+    df["bench"] = market_benchmark(df, bench_window) if bench_window else 0.0
     df[TARGET] = df["yield"] - df["bench"]
 
     # last trade of the same CUSIP, strictly earlier, as a spread over the benchmark at that time

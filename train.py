@@ -98,7 +98,7 @@ def fit_quantiles(fit, val, features=FEATURES, quantiles=(0.1, 0.9)):
 
 
 def calibrate_range(q_models, val: pd.DataFrame, features=FEATURES, target=TARGET_COVERAGE,
-                    by_staleness=True, min_group=300) -> tuple[dict, float]:
+                    by_staleness=True, min_group=40) -> tuple[dict, float]:
     """Conformal widening so the 10-90 band covers `target` of calibration trades.
 
     Returns (per-bucket widen, global widen). Per-bucket widening is the fix for

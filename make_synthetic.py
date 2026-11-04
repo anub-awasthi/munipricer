@@ -81,12 +81,17 @@ bonds["issue_size_mm"] = np.round(np.exp(rng.normal(3.0, 1.1, N_BONDS)), 1)  # $
 bonds["callable"] = rng.random(N_BONDS) < 0.55
 bonds["bank_qualified"] = rng.random(N_BONDS) < 0.25
 bonds["insured"] = rng.random(N_BONDS) < 0.12
-# per-issuer idiosyncratic spread the model cannot see directly (adds realistic noise)
-bonds["_issuer_eps"] = rng.normal(0, 12, N_BONDS)
+# per-bond idiosyncratic spread the model cannot see from reference fields. In the real market two bonds with
+# the same rating, sector and state trade tens of bps apart, and the only way to know is the bond's own trade
+# history. 35 bps keeps the history features honest; v1 used 12, which made reference fields almost sufficient.
+bonds["_issuer_eps"] = rng.normal(0, 35, N_BONDS)
 # liquidity: bigger, higher rated, GO bonds trade more
 lam = 0.6 * np.log1p(bonds["issue_size_mm"]) + np.where(bonds["sector"] == "General Obligation", 0.4, 0) \
     + bonds["rating"].map(lambda r: 0.5 if r.startswith("AA") else 0).values
-bonds["_trade_rate"] = np.exp(lam) / np.exp(lam).mean()
+# heavy-tailed activity, as in the real market: a few bonds trade daily, most trade a handful of times a year.
+# The lognormal factor gives roughly 40% of bonds fewer than 5 trades a year, so the stale buckets are populated.
+bonds["_trade_rate"] = np.exp(lam + rng.normal(0, 1.3, N_BONDS))
+bonds["_trade_rate"] /= bonds["_trade_rate"].mean()
 
 # ---------------- trades ----------------
 bond_idx = rng.choice(N_BONDS, N_TRADES, p=bonds["_trade_rate"] / bonds["_trade_rate"].sum())
