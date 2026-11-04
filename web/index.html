@@ -103,8 +103,8 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
   <div class="side" id="side" hidden>
     <div class="eyebrow" style="margin-bottom:6px">Your side of the trade</div>
     <div class="seg" role="group" aria-label="Trade side">
-      <button type="button" data-tt="P" aria-pressed="true">Buying from a dealer</button>
-      <button type="button" data-tt="S" aria-pressed="false">Selling to a dealer</button>
+      <button type="button" data-tt="S" aria-pressed="true">Buying from a dealer</button>
+      <button type="button" data-tt="P" aria-pressed="false">Selling to a dealer</button>
       <button type="button" data-tt="D" aria-pressed="false">Dealer to dealer</button>
     </div>
     <p class="hint">Assumes a $25,000 trade. Small customer trades carry a dealer markup or markdown.</p>
@@ -135,7 +135,7 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
 <script>
 (async function () {
   const $ = id => document.getElementById(id);
-  let DATA, byId = {}, current = null, tt = "P";
+  let DATA, byId = {}, current = null, tt = "S";
   try {
     DATA = await (await fetch("demo_data.json")).json();
   } catch (e) {

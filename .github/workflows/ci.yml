@@ -1,0 +1,27 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Unit and end-to-end tests (small synthetic file)
+        run: pytest -q
+      - name: Full synthetic pipeline smoke test
+        env:
+          MUNI_N_BONDS: "1000"
+          MUNI_N_TRADES: "20000"
+        run: |
+          python make_synthetic.py
+          python train.py --out models_ci
+          python -c "from predict import MuniPricer; p=MuniPricer('models_ci'); r=p.price(p.ref.iloc[0].to_dict()); print(round(r['price'],2), r['confidence'])"

@@ -6,15 +6,19 @@ load either this file or a real WRDS export without changes.
 
 Author: Anubhav Awasthi
 """
+import os
 import numpy as np
 import pandas as pd
 from datetime import date, timedelta
 
 rng = np.random.default_rng(42)
 
-N_BONDS = 3000
-N_TRADES = 60000
+# overridable for tests and CI: MUNI_N_BONDS=400 MUNI_N_TRADES=8000 MUNI_OUT_DIR=/tmp/x python make_synthetic.py
+N_BONDS = int(os.environ.get("MUNI_N_BONDS", 3000))
+N_TRADES = int(os.environ.get("MUNI_N_TRADES", 60000))
+OUT_DIR = os.environ.get("MUNI_OUT_DIR", "data")
 AS_OF = date(2026, 10, 1)
+os.makedirs(OUT_DIR, exist_ok=True)
 
 STATES = ["CA", "NY", "TX", "IL", "FL", "PA", "OH", "NJ", "MA", "WA", "MI", "GA", "NC", "VA", "AZ"]
 STATE_W = np.array([18, 14, 11, 8, 7, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3], dtype=float)
@@ -96,8 +100,10 @@ t["years_to_maturity"] = t["years_to_maturity"].clip(0.25, 30)
 # market level drifts over the year: a slow sine plus a small random walk
 market_shift = 0.25 * np.sin(days_back / 365 * 2 * np.pi) + rng.normal(0, 0.04, N_TRADES)
 
-# trade type and size: customer buys pay a markup, small trades pay more
-t["trade_type"] = rng.choice(["D", "P", "S"], N_TRADES, p=[0.25, 0.35, 0.40])  # D=dealer-dealer, P=customer buy from dealer, S=customer sell to dealer
+# trade type and size, MSRB convention: D = inter-dealer, P = dealer PURCHASE from a customer (the customer
+# sells, gets a lower price = higher yield), S = dealer SALE to a customer (the customer buys, pays a markup).
+# Small trades carry a bigger markup/markdown.
+t["trade_type"] = rng.choice(["D", "P", "S"], N_TRADES, p=[0.25, 0.35, 0.40])
 par = np.exp(rng.normal(np.log(25000), 1.0, N_TRADES))
 t["par_traded"] = np.round(par / 5000) * 5000
 t["par_traded"] = t["par_traded"].clip(5000, 5_000_000)
@@ -119,15 +125,14 @@ ytm = (aaa_yield(t["years_to_maturity"].values)
        + t["_issuer_eps"].values / 100
        + type_bps / 100
        + rng.normal(0, 0.06, N_TRADES))
-# a sell-side quote on a customer sale gives a lower price = higher yield; already handled by type_bps sign
 t["yield"] = np.round(ytm, 3)
 t["price"] = np.round(price_from_yield(t["coupon"].values, t["yield"].values, t["years_to_maturity"].values), 3)
 
 cols = ["cusip", "trade_date", "trade_type", "par_traded", "price", "yield", "coupon", "maturity_date", "dated_date",
         "state", "sector", "rating", "issue_size_mm", "callable", "bank_qualified", "insured"]
 t = t[cols].sort_values("trade_date").reset_index(drop=True)
-t.to_csv("data/trades_synthetic.csv", index=False)
-bonds[["cusip", "state", "sector", "rating", "coupon", "maturity_date", "dated_date", "issue_size_mm", "callable", "bank_qualified", "insured"]].to_csv("data/bonds_synthetic.csv", index=False)
+t.to_csv(os.path.join(OUT_DIR, "trades_synthetic.csv"), index=False)
+bonds[["cusip", "state", "sector", "rating", "coupon", "maturity_date", "dated_date", "issue_size_mm", "callable", "bank_qualified", "insured"]].to_csv(os.path.join(OUT_DIR, "bonds_synthetic.csv"), index=False)
 print(t.head())
 print(len(t), "trades across", t.cusip.nunique(), "bonds")
 print(t[["price", "yield", "years_to_maturity" if "years_to_maturity" in t else "coupon"]].describe().round(2))

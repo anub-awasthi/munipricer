@@ -71,7 +71,7 @@ with left:
     st.divider()
     st.markdown("**Your side of the trade**")
     tt = st.radio("", ["Buying from a dealer", "Selling to a dealer", "Dealer-to-dealer / neutral"], label_visibility="collapsed")
-    bond["trade_type"] = {"Buying from a dealer": "P", "Selling to a dealer": "S", "Dealer-to-dealer / neutral": "D"}[tt]
+    bond["trade_type"] = {"Buying from a dealer": "S", "Selling to a dealer": "P", "Dealer-to-dealer / neutral": "D"}[tt]
     bond["par_traded"] = st.select_slider("Trade size (face value)", [5000, 10000, 25000, 50000, 100000, 250000, 1000000],
                                           value=25000, format_func=lambda v: f"${v:,}")
 
