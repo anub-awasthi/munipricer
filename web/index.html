@@ -84,7 +84,7 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
     <button id="rand" type="button" title="Try a random bond">Random</button>
   </div>
   <datalist id="cusips"></datalist>
-  <p class="hint" id="hint">Demo covers 2,995 bonds from the reference data. Type a few characters to see matches.</p>
+  <p class="hint" id="hint">Type a few characters to see matches, or try Random.</p>
 
   <div class="bond" id="bond" hidden>
     <div class="eyebrow">The bond</div>
@@ -116,7 +116,7 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
   <div class="tiles">
     <div class="t"><div class="eyebrow">Price per 100</div><div class="v" id="r-px"></div></div>
     <div class="t"><div class="eyebrow">80% range</div><div class="v small" id="r-range"></div></div>
-    <div class="t"><div class="eyebrow">Yield</div><div class="v" id="r-y"></div></div>
+    <div class="t"><div class="eyebrow">Yield</div><div class="v" id="r-y"></div><div class="hint" id="r-sp"></div></div>
   </div>
   <p class="verdict">Confidence <span class="pill" id="r-conf"></span> <span id="r-width" class="hint" style="display:inline"></span><br><span id="r-delta"></span></p>
 
@@ -129,7 +129,7 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
 </div>
 
 <div class="about" id="about"></div>
-<footer>Built by Anubhav Awasthi with Ibukun and Eno for AI Essentials, Chicago Booth, Fall 2026. Trained on simulated trade data modeled on MSRB transaction reports; not investment advice.</footer>
+<footer id="foot">Built by Anubhav Awasthi with Ibukun and Eno for AI Essentials, Chicago Booth, Fall 2026. Not investment advice.</footer>
 </div>
 
 <script>
@@ -146,18 +146,31 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
   const dl = $("cusips");
   DATA.bonds.slice(0, 400).forEach(b => { const o = document.createElement("option"); o.value = b.c; dl.appendChild(o); });
   $("asof").textContent = "as of " + DATA.as_of;
+  const nBonds = DATA.bonds.length.toLocaleString();
+  const defaultHint = `Demo covers ${nBonds} bonds from the reference data. Type a few characters to see matches, or try Random.`;
+  $("hint").textContent = defaultHint;
 
   const m = DATA.metrics;
+  if (DATA.synthetic) $("foot").textContent += " This demo is trained on simulated trade data modeled on MSRB transaction reports; the numbers show how the tool works, not what the market is doing.";
   const top = Object.keys(DATA.importance).slice(0, 4).join(", ");
   $("about").innerHTML =
-    `<b>How it works.</b> A gradient-boosted tree model (LightGBM) predicts the bond's yield from its features, the bond's own last trade, ` +
-    `recent trades in similar bonds and the overall market level. Standard bond math turns that yield into a price. Two more models predict the ` +
-    `10th and 90th percentile to give the range, which is then calibrated on held-out trades.<br><br>` +
+    `<b>How it works.</b> A gradient-boosted tree model (LightGBM) predicts the bond's <b>spread over a trailing market benchmark</b> ` +
+    `(currently ${DATA.bench.toFixed(2)}%) from its features, its own last trade, recent trades in similar bonds and the market's direction. ` +
+    `Predicting spread rather than yield keeps the model honest when rates move, because trees cannot extrapolate a level they never saw. ` +
+    `Standard bond math turns the yield into a price. Two more models predict the 10th and 90th percentile to give the range, which is then ` +
+    `widened on held-out trades, separately for each staleness bucket, so bonds that have not traded in a long time get wider ranges.<br><br>` +
     `<b>Accuracy.</b> On ${m.n_test.toLocaleString()} test trades the model never saw, the average price error was <b>${m.lgb_mae_price.toFixed(2)} points</b> ` +
     `(a linear baseline: ${m.baseline_mae_price.toFixed(2)}). The 80% range contained the real price ${Math.round(m.range_coverage * 100)}% of the time. ` +
-    `Biggest drivers overall: ${top}.<br><br>` +
-    `<b>Data.</b> This demo runs on precomputed predictions for 2,995 bonds in a simulated dataset built to mimic MSRB trade reports. ` +
-    `The Python app runs the live model and will be retrained on real WRDS/MSRB data.`;
+    `Biggest drivers overall: ${top}.` + staleTable(m.by_staleness) + `<br><br>` +
+    `<b>Data.</b> This demo runs on precomputed predictions for ${nBonds} bonds in a ${DATA.synthetic ? "simulated dataset built to mimic MSRB trade reports" : "sample of MSRB trade reports"}. ` +
+    `The Python app runs the live model and takes manual bond entry.`;
+
+  function staleTable(bs) {
+    if (!bs) return "";
+    const order = ["<1 wk", "1-4 wk", "1-3 mo", "3-12 mo", "never traded"].filter(k => bs[k]);
+    const rows = order.map(k => `<tr><td>${k}</td><td>${bs[k].mae.toFixed(2)}</td><td>${Math.round(bs[k].coverage * 100)}%</td><td>${bs[k].n.toLocaleString()}</td></tr>`).join("");
+    return `<br><br><b>By how recently the bond last traded</b> (the whole point of the tool):<table style="margin-top:6px;border-collapse:collapse;font-variant-numeric:tabular-nums"><tr><th align=left>Last traded</th><th align=right>&nbsp;&nbsp;Price MAE</th><th align=right>&nbsp;&nbsp;Range coverage</th><th align=right>&nbsp;&nbsp;Test trades</th></tr>${rows.replace(/<td>/g, '<td align=right>').replace(/<tr><td align=right>/g, '<tr><td align=left>')}</table>`;
+  }
 
   function fmtDate(s) { const d = new Date(s + "T00:00:00"); return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); }
   function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
@@ -165,7 +178,7 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
   function show(cusip) {
     const b = byId[cusip];
     if (!b) { $("hint").textContent = "That CUSIP is not in the demo set. Try Random or pick one from the suggestions."; $("hint").style.color = "var(--bad)"; return; }
-    $("hint").style.color = ""; $("hint").textContent = "Demo covers 2,995 bonds from the reference data.";
+    $("hint").style.color = ""; $("hint").textContent = defaultHint;
     current = b;
     $("cusip").value = b.c;
     $("b-title").textContent = `${b.st} \u00b7 ${b.sec} \u00b7 ${b.r}`;
@@ -187,17 +200,13 @@ footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
     $("r-px").textContent = s.px.toFixed(2);
     $("r-range").textContent = `${s.lo.toFixed(1)} to ${s.hi.toFixed(1)}`;
     $("r-y").textContent = s.y.toFixed(2) + "%";
+    $("r-sp").textContent = `${s.sp >= 0 ? "+" : ""}${s.sp} bps vs market ${DATA.bench.toFixed(2)}%`;
     const pill = $("r-conf"); pill.textContent = s.conf; pill.className = "pill " + s.conf;
-    $("r-width").textContent = `(range width ${(s.hi - s.lo).toFixed(2)} points)`;
+    $("r-width").textContent = `(yield range ${Math.round((s.yhi - s.ylo) * 100)} bps, price range ${(s.hi - s.lo).toFixed(2)} points)`;
     const d = s.px - b.lp;
     $("r-delta").textContent = `${Math.abs(d).toFixed(2)} points ${d > 0 ? "above" : "below"} the last trade. ${Math.abs(d) > 1 ? "Rates or spreads have moved since then." : "Not much has changed since then."}`;
 
-    const lines = [`Our estimate is ${s.px.toFixed(2)} per 100 of face value, with an 80% range of ${s.lo.toFixed(2)} to ${s.hi.toFixed(2)}. That works out to a yield of about ${s.y.toFixed(2)}%.`];
-    if (s.conf === "low") lines.push("The range is wide, so treat this as a rough guide rather than a quote.");
-    s.k.slice(0, 5).forEach(([lab, pts, what]) => {
-      lines.push(`${what.charAt(0).toUpperCase() + what.slice(1)}, which pushes the price ${pts > 0 ? "up" : "down"} by about ${Math.abs(pts).toFixed(2)}.`);
-    });
-    $("r-text").textContent = lines.join(" ");
+    $("r-text").textContent = s.t;
 
     const bars = $("bars"); bars.innerHTML = "";
     const max = Math.max(0.5, ...s.k.map(k => Math.abs(k[1])));
