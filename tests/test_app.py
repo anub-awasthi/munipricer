@@ -28,7 +28,7 @@ def test_app_renders_lookup_and_manual(small_models, monkeypatch):
     monkeypatch.setenv("MUNIPRICER_MODELS", small_models)
     monkeypatch.chdir(ROOT)
     from streamlit.testing.v1 import AppTest
-    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at = AppTest.from_file(os.path.join(ROOT, "app.py"), default_timeout=120).run()
     assert not at.exception, [str(e) for e in at.exception]
     assert len(at.metric) == 3 and float(at.metric[0].value) > 50
     at.radio[0].set_value("Enter the details myself").run()
