@@ -1,0 +1,226 @@
+<title>MuniPricer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+<style>
+/* Layout: a two-column desk (bond on the left, verdict on the right) that stacks on phones; numbers in mono, prose in sans. */
+:root {
+  --bg: #f6f5f1; --surface: #ffffff; --fg: #1b2230; --muted: #66707f; --line: #dcdad2;
+  --accent: #1f5f4a; --accent-soft: #e2efe8; --warn: #a3651a; --bad: #a33a2a; --good: #1f5f4a;
+  --bar: #2b6cb0;
+  --display: "Fraunces", Georgia, serif; --body: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15181d; --surface: #1d2127; --fg: #e8e6e0; --muted: #9aa3b0; --line: #30363f;
+  --accent: #7fc5a6; --accent-soft: #1e3a30; --warn: #e0a85a; --bad: #e07a68; --good: #7fc5a6; --bar: #6fa3e0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15181d; --surface: #1d2127; --fg: #e8e6e0; --muted: #9aa3b0; --line: #30363f;
+  --accent: #7fc5a6; --accent-soft: #1e3a30; --warn: #e0a85a; --bad: #e07a68; --good: #7fc5a6; --bar: #6fa3e0; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 22px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: 30px; margin: 0; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--muted); max-width: 60ch; }
+.eyebrow { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+.panel { min-width: 0; }
+label { display: block; font-weight: 500; margin-bottom: 6px; }
+.search { display: flex; gap: 8px; }
+input[type=text] { flex: 1; min-width: 0; font: 500 16px var(--mono); padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); text-transform: uppercase; }
+input[type=text]:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: 500 14px var(--body); padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.bond { margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 14px 16px; }
+.bond h2 { font-family: var(--display); font-weight: 500; font-size: 20px; margin: 0 0 4px; }
+.bond .cusip { font-family: var(--mono); color: var(--muted); font-size: 13px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin-top: 10px; font-size: 14px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.last { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; font-size: 14px; }
+.side { margin-top: 18px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { flex: 1; border: 0; border-radius: 0; background: var(--surface); padding: 9px 6px; font-size: 13.5px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed=true] { background: var(--accent); color: #fff; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 480px) { .tiles { grid-template-columns: 1fr 1fr; } .tiles .t:first-child { grid-column: 1 / -1; } }
+.t { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 12px 14px; min-width: 0; }
+.t .v { font-family: var(--mono); font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 4px; }
+.t .v.small { font-size: 20px; margin-top: 10px; }
+.t:first-child { border-color: var(--accent); }
+.pill { display: inline-block; font-size: 12.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid; }
+.pill.high { color: var(--good); border-color: var(--good); } .pill.medium { color: var(--warn); border-color: var(--warn); } .pill.low { color: var(--bad); border-color: var(--bad); }
+.verdict { margin: 14px 0 0; }
+h3 { font-size: 15px; margin: 24px 0 8px; font-weight: 600; }
+.prose { max-width: 68ch; }
+.bars { display: grid; gap: 7px; margin-top: 8px; }
+.row { display: grid; grid-template-columns: minmax(0, 170px) 1fr 58px; align-items: center; gap: 10px; font-size: 13.5px; }
+.row .lab { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track { position: relative; height: 14px; background: var(--line); border-radius: 3px; }
+.track::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); opacity: .6; }
+.fill { position: absolute; top: 0; bottom: 0; background: var(--bar); border-radius: 3px; }
+.fill.neg { background: var(--bad); }
+.row .num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.about { margin-top: 32px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: 13.5px; max-width: 80ch; }
+.about b { color: var(--fg); font-weight: 500; }
+footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .25s ease, left .25s ease; } }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>MuniPricer</h1>
+  <p>A fair-price estimate for a municipal bond, even one that has not traded in months. Enter a CUSIP and get a price, a range, and the reasons.</p>
+</header>
+
+<div class="grid">
+<section class="panel">
+  <label for="cusip">CUSIP</label>
+  <div class="search">
+    <input id="cusip" type="text" maxlength="9" placeholder="9 characters" list="cusips" autocomplete="off">
+    <button id="go" class="primary" type="button">Price it</button>
+    <button id="rand" type="button" title="Try a random bond">Random</button>
+  </div>
+  <datalist id="cusips"></datalist>
+  <p class="hint" id="hint">Demo covers 2,995 bonds from the reference data. Type a few characters to see matches.</p>
+
+  <div class="bond" id="bond" hidden>
+    <div class="eyebrow">The bond</div>
+    <h2 id="b-title"></h2>
+    <div class="cusip" id="b-cusip"></div>
+    <dl class="kv">
+      <dt>Coupon</dt><dd id="b-coupon"></dd>
+      <dt>Matures</dt><dd id="b-mat"></dd>
+      <dt>Rating</dt><dd id="b-rating"></dd>
+      <dt>Issue size</dt><dd id="b-size"></dd>
+      <dt>Features</dt><dd id="b-feat"></dd>
+    </dl>
+    <div class="last" id="b-last"></div>
+  </div>
+
+  <div class="side" id="side" hidden>
+    <div class="eyebrow" style="margin-bottom:6px">Your side of the trade</div>
+    <div class="seg" role="group" aria-label="Trade side">
+      <button type="button" data-tt="P" aria-pressed="true">Buying from a dealer</button>
+      <button type="button" data-tt="S" aria-pressed="false">Selling to a dealer</button>
+      <button type="button" data-tt="D" aria-pressed="false">Dealer to dealer</button>
+    </div>
+    <p class="hint">Assumes a $25,000 trade. Small customer trades carry a dealer markup or markdown.</p>
+  </div>
+</section>
+
+<section class="panel" id="result" hidden>
+  <div class="eyebrow" style="margin-bottom:8px">Estimated fair price <span id="asof"></span></div>
+  <div class="tiles">
+    <div class="t"><div class="eyebrow">Price per 100</div><div class="v" id="r-px"></div></div>
+    <div class="t"><div class="eyebrow">80% range</div><div class="v small" id="r-range"></div></div>
+    <div class="t"><div class="eyebrow">Yield</div><div class="v" id="r-y"></div></div>
+  </div>
+  <p class="verdict">Confidence <span class="pill" id="r-conf"></span> <span id="r-width" class="hint" style="display:inline"></span><br><span id="r-delta"></span></p>
+
+  <h3>What drove this number</h3>
+  <p class="prose" id="r-text"></p>
+
+  <h3>Price impact by factor <span class="hint" style="display:inline;font-weight:400">(points per 100, vs. an average bond)</span></h3>
+  <div class="bars" id="bars"></div>
+</section>
+</div>
+
+<div class="about" id="about"></div>
+<footer>Built by Anubhav Awasthi with Ibukun and Eno for AI Essentials, Chicago Booth, Fall 2026. Trained on simulated trade data modeled on MSRB transaction reports; not investment advice.</footer>
+</div>
+
+<script>
+(async function () {
+  const $ = id => document.getElementById(id);
+  let DATA, byId = {}, current = null, tt = "P";
+  try {
+    DATA = await (await fetch("demo_data.json")).json();
+  } catch (e) {
+    $("hint").textContent = "Could not load the demo data file. Reload the page to try again.";
+    return;
+  }
+  DATA.bonds.forEach(b => byId[b.c] = b);
+  const dl = $("cusips");
+  DATA.bonds.slice(0, 400).forEach(b => { const o = document.createElement("option"); o.value = b.c; dl.appendChild(o); });
+  $("asof").textContent = "as of " + DATA.as_of;
+
+  const m = DATA.metrics;
+  const top = Object.keys(DATA.importance).slice(0, 4).join(", ");
+  $("about").innerHTML =
+    `<b>How it works.</b> A gradient-boosted tree model (LightGBM) predicts the bond's yield from its features, the bond's own last trade, ` +
+    `recent trades in similar bonds and the overall market level. Standard bond math turns that yield into a price. Two more models predict the ` +
+    `10th and 90th percentile to give the range, which is then calibrated on held-out trades.<br><br>` +
+    `<b>Accuracy.</b> On ${m.n_test.toLocaleString()} test trades the model never saw, the average price error was <b>${m.lgb_mae_price.toFixed(2)} points</b> ` +
+    `(a linear baseline: ${m.baseline_mae_price.toFixed(2)}). The 80% range contained the real price ${Math.round(m.range_coverage * 100)}% of the time. ` +
+    `Biggest drivers overall: ${top}.<br><br>` +
+    `<b>Data.</b> This demo runs on precomputed predictions for 2,995 bonds in a simulated dataset built to mimic MSRB trade reports. ` +
+    `The Python app runs the live model and will be retrained on real WRDS/MSRB data.`;
+
+  function fmtDate(s) { const d = new Date(s + "T00:00:00"); return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); }
+  function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+
+  function show(cusip) {
+    const b = byId[cusip];
+    if (!b) { $("hint").textContent = "That CUSIP is not in the demo set. Try Random or pick one from the suggestions."; $("hint").style.color = "var(--bad)"; return; }
+    $("hint").style.color = ""; $("hint").textContent = "Demo covers 2,995 bonds from the reference data.";
+    current = b;
+    $("cusip").value = b.c;
+    $("b-title").textContent = `${b.st} \u00b7 ${b.sec} \u00b7 ${b.r}`;
+    $("b-cusip").textContent = "CUSIP " + b.c;
+    $("b-coupon").textContent = b.cp.toFixed(2) + "%";
+    $("b-mat").textContent = fmtDate(b.mat);
+    $("b-rating").textContent = b.r === "NR" ? "Not rated" : b.r;
+    $("b-size").textContent = "$" + Math.round(b.sz) + "M";
+    const f = [b.call ? "callable" : "non-callable", b.ins ? "insured" : null, b.bq ? "bank qualified" : null].filter(Boolean).join(", ");
+    $("b-feat").textContent = f;
+    const ago = daysBetween(b.ld, DATA.as_of);
+    $("b-last").innerHTML = `Last traded <b>${fmtDate(b.ld)}</b> (${ago} days ago) at <b>${b.lp.toFixed(2)}</b>, a ${b.ly.toFixed(2)}% yield.`;
+    $("bond").hidden = false; $("side").hidden = false; $("result").hidden = false;
+    render();
+  }
+
+  function render() {
+    const b = current, s = b.s[tt];
+    $("r-px").textContent = s.px.toFixed(2);
+    $("r-range").textContent = `${s.lo.toFixed(1)} to ${s.hi.toFixed(1)}`;
+    $("r-y").textContent = s.y.toFixed(2) + "%";
+    const pill = $("r-conf"); pill.textContent = s.conf; pill.className = "pill " + s.conf;
+    $("r-width").textContent = `(range width ${(s.hi - s.lo).toFixed(2)} points)`;
+    const d = s.px - b.lp;
+    $("r-delta").textContent = `${Math.abs(d).toFixed(2)} points ${d > 0 ? "above" : "below"} the last trade. ${Math.abs(d) > 1 ? "Rates or spreads have moved since then." : "Not much has changed since then."}`;
+
+    const lines = [`Our estimate is ${s.px.toFixed(2)} per 100 of face value, with an 80% range of ${s.lo.toFixed(2)} to ${s.hi.toFixed(2)}. That works out to a yield of about ${s.y.toFixed(2)}%.`];
+    if (s.conf === "low") lines.push("The range is wide, so treat this as a rough guide rather than a quote.");
+    s.k.slice(0, 5).forEach(([lab, pts, what]) => {
+      lines.push(`${what.charAt(0).toUpperCase() + what.slice(1)}, which pushes the price ${pts > 0 ? "up" : "down"} by about ${Math.abs(pts).toFixed(2)}.`);
+    });
+    $("r-text").textContent = lines.join(" ");
+
+    const bars = $("bars"); bars.innerHTML = "";
+    const max = Math.max(0.5, ...s.k.map(k => Math.abs(k[1])));
+    s.k.forEach(([lab, pts]) => {
+      const row = document.createElement("div"); row.className = "row";
+      const w = Math.abs(pts) / max * 50;
+      const left = pts >= 0 ? 50 : 50 - w;
+      row.innerHTML = `<div class="lab" title="${lab}">${lab}</div><div class="track"><div class="fill ${pts < 0 ? "neg" : ""}" style="left:${left}%;width:${w}%"></div></div><div class="num">${pts > 0 ? "+" : ""}${pts.toFixed(2)}</div>`;
+      bars.appendChild(row);
+    });
+  }
+
+  document.querySelectorAll(".seg button").forEach(btn => btn.addEventListener("click", () => {
+    tt = btn.dataset.tt;
+    document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === btn ? "true" : "false"));
+    if (current) render();
+  }));
+  $("go").addEventListener("click", () => show($("cusip").value.trim().toUpperCase()));
+  $("cusip").addEventListener("keydown", e => { if (e.key === "Enter") show($("cusip").value.trim().toUpperCase()); });
+  $("rand").addEventListener("click", () => show(DATA.bonds[Math.floor(Math.random() * DATA.bonds.length)].c));
+
+  // open with a realistic example: a bond that has not traded in a while
+  const stale = DATA.bonds.filter(b => daysBetween(b.ld, DATA.as_of) > 120);
+  show((stale[7] || DATA.bonds[0]).c);
+})();
+</script>
