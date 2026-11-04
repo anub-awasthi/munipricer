@@ -1,0 +1,167 @@
+{
+  "features": [
+    "coupon",
+    "years_to_maturity",
+    "rating_num",
+    "log_issue_size",
+    "callable",
+    "bank_qualified",
+    "insured",
+    "log_par",
+    "last_spread_same_cusip",
+    "days_since_last_trade",
+    "bucket_spread_30d",
+    "market_momentum_7d",
+    "state",
+    "sector",
+    "trade_type"
+  ],
+  "cat_cols": [
+    "state",
+    "sector",
+    "trade_type"
+  ],
+  "categories": {
+    "state": [
+      "AZ",
+      "CA",
+      "FL",
+      "GA",
+      "IL",
+      "MA",
+      "MI",
+      "NC",
+      "NJ",
+      "NY",
+      "OH",
+      "PA",
+      "TX",
+      "VA",
+      "WA"
+    ],
+    "sector": [
+      "Electric Utility",
+      "General Obligation",
+      "Healthcare",
+      "Higher Ed",
+      "Housing",
+      "School District",
+      "Transportation",
+      "Water & Sewer"
+    ],
+    "trade_type": [
+      "D",
+      "P",
+      "S"
+    ]
+  },
+  "num_medians": {
+    "coupon": 4.0,
+    "years_to_maturity": 10.518822724161533,
+    "rating_num": 2.0,
+    "log_issue_size": 3.770459441106359,
+    "callable": 1.0,
+    "bank_qualified": 0.0,
+    "insured": 0.0,
+    "log_par": 10.126631103850338,
+    "last_spread_same_cusip": -0.07222510765654988,
+    "days_since_last_trade": 4.0,
+    "bucket_spread_30d": -0.0642609431699479,
+    "market_momentum_7d": -0.003251772066074743
+  },
+  "range_widen": 0.026815009715192264,
+  "range_widen_by_staleness": {
+    "<1 wk": 0.02399031038073315,
+    "1-4 wk": 0.03085162152101963,
+    "1-3 mo": 0.03918537664323585,
+    "3-12 mo": 0.036050635245313024,
+    "never traded": 0.20578315976564238
+  },
+  "target": "spread",
+  "t0": "2025-10-02",
+  "bench_latest": 3.460451310861423,
+  "market_momentum_latest": 0.03215190198998252,
+  "as_of": "2026-10-01",
+  "data_path": "data/trades_synthetic.csv",
+  "synthetic": true,
+  "metrics": {
+    "baseline_mae_price": 1.385,
+    "lgb_mae_price": 0.709,
+    "range_coverage": 0.795,
+    "range_width_price": 2.719,
+    "n_fit": 42678,
+    "n_valid": 7354,
+    "n_test": 9968,
+    "by_staleness": {
+      "1-3 mo": {
+        "mae": 0.868,
+        "coverage": 0.782,
+        "n": 858
+      },
+      "1-4 wk": {
+        "mae": 0.78,
+        "coverage": 0.788,
+        "n": 2345
+      },
+      "3-12 mo": {
+        "mae": 1.023,
+        "coverage": 0.781,
+        "n": 360
+      },
+      "<1 wk": {
+        "mae": 0.631,
+        "coverage": 0.8,
+        "n": 6363
+      },
+      "never traded": {
+        "mae": 2.758,
+        "coverage": 0.833,
+        "n": 42
+      }
+    }
+  },
+  "importance": {
+    "last_spread_same_cusip": 0.7569,
+    "bucket_spread_30d": 0.1,
+    "trade_type": 0.0337,
+    "years_to_maturity": 0.0254,
+    "log_issue_size": 0.0156,
+    "state": 0.0142,
+    "rating_num": 0.0129,
+    "days_since_last_trade": 0.008,
+    "market_momentum_7d": 0.0079,
+    "log_par": 0.0076,
+    "sector": 0.0067,
+    "coupon": 0.0059,
+    "callable": 0.0031,
+    "bank_qualified": 0.0015,
+    "insured": 0.0005
+  },
+  "bucket_spread_latest": {
+    "0-0": -0.7217412622900691,
+    "0-1": -0.6302192349719039,
+    "0-2": -0.34065025657027803,
+    "0-3": 0.0719663562271289,
+    "0-4": 0.5538486916748484,
+    "1-0": -0.3823590070451109,
+    "1-1": -0.4634902648017391,
+    "1-2": -0.12257624914017921,
+    "1-3": 0.25882977432422066,
+    "1-4": 0.7403290660925181,
+    "2-0": 0.09822274711036785,
+    "2-1": -0.04200258998531766,
+    "2-2": 0.5238580588162806,
+    "2-3": 0.8654030112272749,
+    "2-4": 1.2752512239897391,
+    "3-0": 0.5390668431769076,
+    "3-1": 0.8305865991248447,
+    "3-2": 1.0167693917486968,
+    "3-3": 1.7976707225842055,
+    "3-4": 1.355914342629482,
+    "4-0": 0.6039049630677803,
+    "4-1": 0.6589914246490668,
+    "4-2": 1.2671534648072176,
+    "4-3": 1.2112115549661961,
+    "4-4": 2.0280861013334617
+  }
+}
